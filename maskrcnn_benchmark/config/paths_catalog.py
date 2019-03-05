@@ -103,7 +103,11 @@ class DatasetCatalog(object):
         "cityscapes_fine_instanceonly_seg_test_cocostyle": {
             "img_dir": "cityscapes/images",
             "ann_file": "cityscapes/annotations/instancesonly_filtered_gtFine_test.json"
-        }
+        },
+        "tianchi_xray_in_coco": {
+            "img_dir": "tianchi_xray/restricted",
+            "ann_file": "tianchi_xray/train_no_poly.json",
+        },
     }
 
     @staticmethod

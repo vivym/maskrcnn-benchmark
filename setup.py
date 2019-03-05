@@ -3,6 +3,7 @@
 
 import glob
 import os
+import platform
 
 import torch
 from setuptools import find_packages
@@ -25,8 +26,11 @@ def get_extensions():
     sources = main_file + source_cpu
     extension = CppExtension
 
-    extra_compile_args = {"cxx": []}
+    extra_compile_args = {
+        "cxx": ['-stdlib=libc++' if platform.platform().startswith('Darwin') else ''],
+    }
     define_macros = []
+    extra_link_args = ['-stdlib=libc++' if platform.platform().startswith('Darwin') else '']
 
     if torch.cuda.is_available() and CUDA_HOME is not None:
         extension = CUDAExtension
@@ -50,6 +54,7 @@ def get_extensions():
             include_dirs=include_dirs,
             define_macros=define_macros,
             extra_compile_args=extra_compile_args,
+            extra_link_args=extra_link_args
         )
     ]
 

@@ -1,10 +1,17 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+import argparse
+import os
+import sys
+
+this_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.abspath(os.path.join(this_dir, '..'))
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+
 # Set up custom environment before nearly anything else is imported
 # NOTE: this should be the first import (no not reorder)
 from maskrcnn_benchmark.utils.env import setup_environment  # noqa F401 isort:skip
 
-import argparse
-import os
 
 import torch
 from maskrcnn_benchmark.config import cfg
