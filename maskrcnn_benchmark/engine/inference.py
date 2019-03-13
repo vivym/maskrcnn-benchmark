@@ -61,6 +61,8 @@ def inference(
         expected_results=(),
         expected_results_sigma_tol=4,
         output_folder=None,
+        no_eval=False,
+        pred_filter=None,
 ):
     # convert to a torch.device for efficiency
     device = torch.device(device)
@@ -81,6 +83,9 @@ def inference(
     )
 
     predictions = _accumulate_predictions_from_multiple_gpus(predictions)
+    if pred_filter is not None:
+        predictions = list(filter(pred_filter, predictions))
+
     if not is_main_process():
         return
 
@@ -94,7 +99,8 @@ def inference(
         expected_results_sigma_tol=expected_results_sigma_tol,
     )
 
-    return evaluate(dataset=dataset,
-                    predictions=predictions,
-                    output_folder=output_folder,
-                    **extra_args)
+    if not no_eval:
+        return evaluate(dataset=dataset,
+                        predictions=predictions,
+                        output_folder=output_folder,
+                        **extra_args)

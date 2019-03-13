@@ -44,19 +44,27 @@ def do_train(
     device,
     checkpoint_period,
     arguments,
+    meters,
+    no_mixup_iters,
 ):
     logger = logging.getLogger("maskrcnn_benchmark.trainer")
     logger.info("Start training")
-    meters = MetricLogger(delimiter="  ")
     max_iter = len(data_loader)
     start_iter = arguments["iteration"]
     model.train()
     start_training_time = time.time()
     end = time.time()
-    for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
+    for iteration, (images, targets, *extras) in enumerate(data_loader, start_iter):
         data_time = time.time() - end
         iteration = iteration + 1
         arguments["iteration"] = iteration
+
+        lambd = 1.0
+        if no_mixup_iters is not None:
+            lambd = data_loader.dataset.step()
+            if max_iter - iteration < no_mixup_iters:
+                no_mixup_iters = None
+                data_loader.dataset.set_mixup(None)
 
         scheduler.step()
 
@@ -65,7 +73,10 @@ def do_train(
 
         loss_dict = model(images, targets)
 
-        losses = sum(loss for loss in loss_dict.values())
+        if no_mixup_iters is not None:
+            losses = sum(loss for loss in loss_dict.values()) * lambd
+        else:
+            losses = sum(loss for loss in loss_dict.values())
 
         # reduce losses over all GPUs for logging purposes
         loss_dict_reduced = reduce_loss_dict(loss_dict)

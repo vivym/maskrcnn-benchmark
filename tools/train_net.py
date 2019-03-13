@@ -30,9 +30,10 @@ from maskrcnn_benchmark.utils.comm import synchronize, get_rank
 from maskrcnn_benchmark.utils.imports import import_file
 from maskrcnn_benchmark.utils.logger import setup_logger
 from maskrcnn_benchmark.utils.miscellaneous import mkdir
+from maskrcnn_benchmark.utils.metric_logger import MetricLogger, TensorboardLogger
 
 
-def train(cfg, local_rank, distributed):
+def train(cfg, local_rank, distributed, use_tensorboard):
     model = build_detection_model(cfg)
     device = torch.device(cfg.MODEL.DEVICE)
     model.to(device)
@@ -49,6 +50,8 @@ def train(cfg, local_rank, distributed):
 
     arguments = {}
     arguments["iteration"] = 0
+    seed = cfg.MODEL.SEED
+    arguments["seed"] = seed
 
     output_dir = cfg.OUTPUT_DIR
 
@@ -68,6 +71,15 @@ def train(cfg, local_rank, distributed):
 
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
 
+    if use_tensorboard:
+        meters = TensorboardLogger(
+            log_dir=os.path.join(cfg.OUTPUT_DIR, 'tb'),
+            start_iter=arguments['iteration'],
+            delimiter="  ",
+        )
+    else:
+        meters = MetricLogger(delimiter="  ")
+
     do_train(
         model,
         data_loader,
@@ -77,6 +89,8 @@ def train(cfg, local_rank, distributed):
         device,
         checkpoint_period,
         arguments,
+        meters,
+        cfg.INPUT.NO_MIXUP_ITERS if cfg.INPUT.MIXUP else None
     )
 
     return model
@@ -131,6 +145,13 @@ def main():
         action="store_true",
     )
     parser.add_argument(
+        "--use-tb",
+        dest="use_tensorboard",
+        help="Use tensorboardX logger (Requires tensorboardX installed)",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
         default=None,
@@ -170,7 +191,16 @@ def main():
         logger.info(config_str)
     logger.info("Running with config:\n{}".format(cfg))
 
-    model = train(cfg, args.local_rank, args.distributed)
+    seed = cfg.MODEL.SEED
+    if seed >= 0:
+        if args.distributed:
+            seed += args.local_rank
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(seed)
+        logger.info("Using seed: {}".format(seed))
+
+    model = train(cfg, args.local_rank, args.distributed, args.use_tensorboard)
 
     if not args.skip_test:
         run_test(cfg, model, args.distributed)

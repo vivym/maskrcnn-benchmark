@@ -33,4 +33,5 @@ dist/
 .DS_Store
 
 # log
+logs/
 log.txt

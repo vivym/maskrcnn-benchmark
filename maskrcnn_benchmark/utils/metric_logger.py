@@ -1,8 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 from collections import defaultdict
 from collections import deque
+from datetime import datetime
+import time
 
 import torch
+
+from .comm import is_main_process
 
 
 class SmoothedValue(object):
@@ -64,3 +68,37 @@ class MetricLogger(object):
                 "{}: {:.4f} ({:.4f})".format(name, meter.median, meter.global_avg)
             )
         return self.delimiter.join(loss_str)
+
+
+class TensorboardLogger(MetricLogger):
+    def __init__(self, log_dir, start_iter=0, delimiter="\t"):
+        super(TensorboardLogger, self).__init__(delimiter)
+        self.iteration = start_iter
+        self.writer = self._get_tensorboard_writer(log_dir)
+
+    @staticmethod
+    def _get_tensorboard_writer(log_dir):
+        if not is_main_process():
+            return None
+
+        try:
+            from tensorboardX import SummaryWriter
+        except ImportError:
+            raise ImportError(
+                "To use tensorboard please install tensorboardX "
+                "[ pip install tensorflow tensorboardX ]."
+            )
+
+        timestamp = datetime.fromtimestamp(time.time()).strftime("%Y%m%d-%H-%M")
+        tb_logger = SummaryWriter('{}-{}'.format(log_dir, timestamp))
+        return tb_logger
+
+    def update(self, **kwargs):
+        super(TensorboardLogger, self).update(**kwargs)
+        if self.writer is not None:
+            for k, v in kwargs.items():
+                if isinstance(v, torch.Tensor):
+                    v = v.item()
+                assert isinstance(v, (float, int))
+                self.writer.add_scalar(k, v, self.iteration)
+            self.iteration += 1

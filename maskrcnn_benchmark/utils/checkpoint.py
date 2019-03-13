@@ -19,6 +19,7 @@ class Checkpointer(object):
         save_dir="",
         save_to_disk=None,
         logger=None,
+        force_weight=False,
     ):
         self.model = model
         self.optimizer = optimizer
@@ -28,6 +29,7 @@ class Checkpointer(object):
         if logger is None:
             logger = logging.getLogger(__name__)
         self.logger = logger
+        self.force_weight = force_weight
 
     def save(self, name, **kwargs):
         if not self.save_dir:
@@ -50,7 +52,7 @@ class Checkpointer(object):
         self.tag_last_checkpoint(save_file)
 
     def load(self, f=None):
-        if self.has_checkpoint():
+        if not self.force_weight and self.has_checkpoint():
             # override argument with existing checkpoint
             f = self.get_checkpoint_file()
         if not f:
@@ -108,9 +110,10 @@ class DetectronCheckpointer(Checkpointer):
         save_dir="",
         save_to_disk=None,
         logger=None,
+        force_weight=False,
     ):
         super(DetectronCheckpointer, self).__init__(
-            model, optimizer, scheduler, save_dir, save_to_disk, logger
+            model, optimizer, scheduler, save_dir, save_to_disk, logger, force_weight
         )
         self.cfg = cfg.clone()
 

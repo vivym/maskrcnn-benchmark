@@ -33,6 +33,8 @@ _C.MODEL.CLS_AGNOSTIC_BBOX_REG = False
 # the path in paths_catalog. Else, it will use it as the specified absolute
 # path
 _C.MODEL.WEIGHT = ""
+_C.MODEL.FORCE_WEIGHT = False
+_C.MODEL.SEED = -1
 
 
 # -----------------------------------------------------------------------------
@@ -53,6 +55,9 @@ _C.INPUT.PIXEL_MEAN = [102.9801, 115.9465, 122.7717]
 _C.INPUT.PIXEL_STD = [1., 1., 1.]
 # Convert image to BGR format (for Caffe2 models), in range 0-255
 _C.INPUT.TO_BGR255 = True
+# Mixup
+_C.INPUT.MIXUP = False
+_C.INPUT.NO_MIXUP_ITERS = 3000
 
 
 # -----------------------------------------------------------------------------

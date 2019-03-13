@@ -106,7 +106,55 @@ class DatasetCatalog(object):
         },
         "tianchi_xray_in_coco": {
             "img_dir": "tianchi_xray/restricted",
-            "ann_file": "tianchi_xray/train_no_poly.json",
+            "ann_file": "tianchi_xray/train_no_poly_adapted_ex_eval.json",
+        },
+        "tianchi_xray_full_in_coco": {
+            "img_dir": "tianchi_xray/restricted",
+            "ann_file": "tianchi_xray/train_no_poly_adapted.json",
+        },
+        "tianchi_xray_eval_in_coco": {
+            "img_dir": "tianchi_xray/restricted",
+            "ann_file": "tianchi_xray/eval_no_poly_adapted.json",
+        },
+        "tianchi_xray_100_in_coco": {
+            "img_dir": "tianchi_xray/restricted",
+            "ann_file": "tianchi_xray/train_no_poly_100.json",
+        },
+        "tianchi_xray_normal_in_coco": {
+            "img_dir": "tianchi_xray/normal",
+            "ann_file": "tianchi_xray/train_no_poly_normal.json",
+        },
+        "tianchi_xray_test_a_in_coco": {
+            "img_dir": "tianchi_xray/test_a",
+            "ann_file": "tianchi_xray/test_no_poly_a.json",
+        },
+        "tianchi_xray_with_normal_bbox_in_coco": {
+            "img_dir": "tianchi_xray/restricted",
+            "ann_file": "tianchi_xray/train_no_poly_with_normal_bbox.json"
+        },
+        "tianchi_xray_with_normal_in_coco": {
+            "img_dir": "tianchi_xray/restricted",
+            "ann_file": "tianchi_xray/train_no_poly_adapted_ex_eval_with_normal.json"
+        },
+        "tianchi_xray_eval_with_normal_in_coco": {
+            "img_dir": "tianchi_xray/restricted",
+            "ann_file": "tianchi_xray/eval_no_poly_adapted_with_normal.json"
+        },
+        "tianchi_xray_eval_tiny_in_coco": {
+            "img_dir": "tianchi_xray/restricted",
+            "ann_file": "tianchi_xray/eval_tiny.json"
+        },
+        "tianchi_xray_eval_no_normal_bbox_in_coco": {
+            "img_dir": "tianchi_xray/restricted",
+            "ann_file": "tianchi_xray/eval_no_poly_adapted_no_normal_bbox.json"
+        },
+        "tianchi_xray_with_normal2_in_coco": {
+            "img_dir": "tianchi_xray/restricted",
+            "ann_file": "tianchi_xray/train_no_poly_adapted_ex_eval_with_normal2.json"
+        },
+        "tianchi_xray_eval_no_normal_bbox2_in_coco": {
+            "img_dir": "tianchi_xray/restricted",
+            "ann_file": "tianchi_xray/eval_no_poly_adapted_with_normal2.json"
         },
     }
 

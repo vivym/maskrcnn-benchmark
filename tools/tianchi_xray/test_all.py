@@ -2,9 +2,11 @@
 import argparse
 import os
 import sys
+import re
+import simplejson as json
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.abspath(os.path.join(this_dir, '..'))
+root_dir = os.path.abspath(os.path.join(this_dir, '..', '..'))
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
@@ -23,6 +25,32 @@ from maskrcnn_benchmark.utils.collect_env import collect_env_info
 from maskrcnn_benchmark.utils.comm import synchronize, get_rank
 from maskrcnn_benchmark.utils.logger import setup_logger
 from maskrcnn_benchmark.utils.miscellaneous import mkdir
+
+
+def run_test(iter, model, args, iou_types, output_folders, dataset_names, distributed):
+    data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
+    for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
+        results, coco_results = inference(
+            model,
+            data_loader_val,
+            dataset_name=dataset_name,
+            iou_types=iou_types,
+            box_only=False if cfg.MODEL.RETINANET_ON else cfg.MODEL.RPN_ONLY,
+            device=cfg.MODEL.DEVICE,
+            expected_results=cfg.TEST.EXPECTED_RESULTS,
+            expected_results_sigma_tol=cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
+            output_folder=output_folder,
+            no_eval=args.no_eval,
+        )
+        synchronize()
+        with open(os.path.join(output_folder, 'all.txt'), 'a+') as f:
+            obj = {
+                'iter': iter,
+                'results': results.results,
+                'coco_results': coco_results,
+            }
+            json.dump(obj, f)
+            f.write('\n')
 
 
 def main():
@@ -80,7 +108,6 @@ def main():
 
     output_dir = cfg.OUTPUT_DIR
     checkpointer = DetectronCheckpointer(cfg, model, save_dir=output_dir, force_weight=cfg.MODEL.FORCE_WEIGHT)
-    _ = checkpointer.load(cfg.MODEL.WEIGHT)
 
     iou_types = ("bbox",)
     if cfg.MODEL.MASK_ON:
@@ -94,21 +121,23 @@ def main():
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference", dataset_name)
             mkdir(output_folder)
             output_folders[idx] = output_folder
-    data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
-    for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
-        inference(
-            model,
-            data_loader_val,
-            dataset_name=dataset_name,
+
+    patt = re.compile(r'^model_(\d+).pth$')
+    names = filter(lambda x: patt.match(x), os.listdir(cfg.OUTPUT_DIR))
+    names = list(map(lambda x: (patt.match(x).group(1), x), names))
+    names.sort(key=lambda x: x[0])
+    for iter, name in names:
+        _ = checkpointer.load(os.path.join(cfg.OUTPUT_DIR, name))
+
+        run_test(
+            iter=iter,
+            model=model,
+            args=args,
             iou_types=iou_types,
-            box_only=False if cfg.MODEL.RETINANET_ON else cfg.MODEL.RPN_ONLY,
-            device=cfg.MODEL.DEVICE,
-            expected_results=cfg.TEST.EXPECTED_RESULTS,
-            expected_results_sigma_tol=cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
-            output_folder=output_folder,
-            no_eval=args.no_eval,
+            output_folders=output_folders,
+            dataset_names=dataset_names,
+            distributed=distributed,
         )
-        synchronize()
 
 
 if __name__ == "__main__":

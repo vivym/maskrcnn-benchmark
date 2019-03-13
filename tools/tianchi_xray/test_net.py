@@ -4,7 +4,7 @@ import os
 import sys
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.abspath(os.path.join(this_dir, '..'))
+root_dir = os.path.abspath(os.path.join(this_dir, '..', '..'))
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
@@ -23,6 +23,10 @@ from maskrcnn_benchmark.utils.collect_env import collect_env_info
 from maskrcnn_benchmark.utils.comm import synchronize, get_rank
 from maskrcnn_benchmark.utils.logger import setup_logger
 from maskrcnn_benchmark.utils.miscellaneous import mkdir
+
+
+def pred_filter(pred):
+    return True
 
 
 def main():
@@ -107,6 +111,7 @@ def main():
             expected_results_sigma_tol=cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
             output_folder=output_folder,
             no_eval=args.no_eval,
+            pred_filter=pred_filter,
         )
         synchronize()
 
