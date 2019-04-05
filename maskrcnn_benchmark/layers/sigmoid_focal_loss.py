@@ -53,10 +53,11 @@ def sigmoid_focal_loss_cpu(logits, targets, gamma, alpha):
 
 
 class SigmoidFocalLoss(nn.Module):
-    def __init__(self, gamma, alpha):
+    def __init__(self, gamma, alpha, reduction='sum'):
         super(SigmoidFocalLoss, self).__init__()
         self.gamma = gamma
         self.alpha = alpha
+        self.reduction = reduction
 
     def forward(self, logits, targets):
         device = logits.device
@@ -66,7 +67,10 @@ class SigmoidFocalLoss(nn.Module):
             loss_func = sigmoid_focal_loss_cpu
 
         loss = loss_func(logits, targets, self.gamma, self.alpha)
-        return loss.sum()
+        if self.reduction == 'sum':
+            return loss.sum()
+        elif self.reduction == 'mean':
+            return loss.mean()
 
     def __repr__(self):
         tmpstr = self.__class__.__name__ + "("

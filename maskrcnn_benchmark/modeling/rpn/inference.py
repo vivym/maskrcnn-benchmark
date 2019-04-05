@@ -10,6 +10,7 @@ from maskrcnn_benchmark.structures.boxlist_ops import remove_small_boxes
 from ..utils import cat
 from .utils import permute_and_flatten
 
+
 class RPNPostProcessor(torch.nn.Module):
     """
     Performs post-processing on the outputs of the RPN boxes, before feeding the
@@ -21,6 +22,9 @@ class RPNPostProcessor(torch.nn.Module):
         pre_nms_top_n,
         post_nms_top_n,
         nms_thresh,
+        nms_method,
+        nms_sigma,
+        nms_min_score,
         min_size,
         box_coder=None,
         fpn_post_nms_top_n=None,
@@ -114,6 +118,7 @@ class RPNPostProcessor(torch.nn.Module):
             boxlist = boxlist_nms(
                 boxlist,
                 self.nms_thresh,
+                method='vanilla',
                 max_proposals=self.post_nms_top_n,
                 score_field="objectness",
             )
@@ -190,11 +195,17 @@ def make_rpn_postprocessor(config, rpn_box_coder, is_train):
         pre_nms_top_n = config.MODEL.RPN.PRE_NMS_TOP_N_TEST
         post_nms_top_n = config.MODEL.RPN.POST_NMS_TOP_N_TEST
     nms_thresh = config.MODEL.RPN.NMS_THRESH
+    nms_method = config.MODEL.RPN.NMS_METHOD
+    nms_sigma = config.MODEL.RPN.NMS_SIGMA
+    nms_min_score = config.MODEL.RPN.NMS_MIN_SCORE
     min_size = config.MODEL.RPN.MIN_SIZE
     box_selector = RPNPostProcessor(
         pre_nms_top_n=pre_nms_top_n,
         post_nms_top_n=post_nms_top_n,
         nms_thresh=nms_thresh,
+        nms_method=nms_method,
+        nms_sigma=nms_sigma,
+        nms_min_score=nms_min_score,
         min_size=min_size,
         box_coder=rpn_box_coder,
         fpn_post_nms_top_n=fpn_post_nms_top_n,

@@ -26,3 +26,18 @@ at::Tensor nms(const at::Tensor& dets,
   at::Tensor result = nms_cpu(dets, scores, threshold);
   return result;
 }
+
+at::Tensor soft_nms(const at::Tensor& dets,
+                    const at::Tensor& scores,
+                    const float threshold,
+                    const unsigned int method,
+                    const float sigma,
+                    const float min_score) {
+
+  if (dets.type().is_cuda()) {
+    AT_ERROR("Not implemented on the GPU");
+  }
+
+  at::Tensor result = soft_nms_cpu(dets, scores, threshold, method, sigma, min_score);
+  return result;
+}

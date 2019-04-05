@@ -10,6 +10,12 @@ from maskrcnn_benchmark.config import cfg
 from maskrcnn_benchmark.layers import Conv2d
 from maskrcnn_benchmark.modeling.poolers import Pooler
 
+try:
+    from apex.parallel import SyncBatchNorm
+except ImportError:
+    raise ImportError(
+        "Please install apex from https://www.github.com/nvidia/apex .")
+
 
 def get_group_gn(dim, dim_per_gp, num_groups):
     """get number of groups used by GroupNorm, based on number of channels."""
@@ -92,7 +98,7 @@ def make_fc(dim_in, hidden_dim, use_gn=False):
     return fc
 
 
-def conv_with_kaiming_uniform(use_gn=False, use_relu=False):
+def conv_with_kaiming_uniform(norm_func='', use_relu=False):
     def make_conv(
         in_channels, out_channels, kernel_size, stride=1, dilation=1
     ):
@@ -103,16 +109,21 @@ def conv_with_kaiming_uniform(use_gn=False, use_relu=False):
             stride=stride, 
             padding=dilation * (kernel_size - 1) // 2, 
             dilation=dilation, 
-            bias=False if use_gn else True
+            bias=False if norm_func else True
         )
         # Caffe2 implementation uses XavierFill, which in fact
         # corresponds to kaiming_uniform_ in PyTorch
         nn.init.kaiming_uniform_(conv.weight, a=1)
-        if not use_gn:
+        if not norm_func:
             nn.init.constant_(conv.bias, 0)
         module = [conv,]
-        if use_gn:
+
+        if norm_func == 'GN':
             module.append(group_norm(out_channels))
+        elif norm_func == 'SyncBN':
+            module.append(SyncBatchNorm(out_channels))
+        elif norm_func:
+            raise TypeError("invalid norm_func", norm_func)
         if use_relu:
             module.append(nn.ReLU(inplace=True))
         if len(module) > 1:

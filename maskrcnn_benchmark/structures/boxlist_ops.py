@@ -4,9 +4,10 @@ import torch
 from .bounding_box import BoxList
 
 from maskrcnn_benchmark.layers import nms as _box_nms
+from maskrcnn_benchmark.layers import soft_nms as _box_soft_nms
 
 
-def boxlist_nms(boxlist, nms_thresh, max_proposals=-1, score_field="scores"):
+def boxlist_nms(boxlist, nms_thresh, method='vanilla', sigma=0.5, min_score=0.001, max_proposals=-1, score_field="scores"):
     """
     Performs non-maximum suppression on a boxlist, with scores specified
     in a boxlist field via score_field.
@@ -23,8 +24,16 @@ def boxlist_nms(boxlist, nms_thresh, max_proposals=-1, score_field="scores"):
     mode = boxlist.mode
     boxlist = boxlist.convert("xyxy")
     boxes = boxlist.bbox
-    score = boxlist.get_field(score_field)
-    keep = _box_nms(boxes, score, nms_thresh)
+    scores = boxlist.get_field(score_field)
+    method_codes = {'linear': 1, 'gaussian': 2}
+    if method in method_codes:
+        boxes = boxes.detach().cpu()
+        scores = scores.detach().cpu()
+        keep = _box_soft_nms(boxes, scores, nms_thresh, method_codes[method], sigma, min_score)
+    elif method == 'vanilla':
+        keep = _box_nms(boxes, scores, nms_thresh)
+    else:
+        raise ValueError("invalid nms method:", method)
     if max_proposals > 0:
         keep = keep[: max_proposals]
     boxlist = boxlist[keep]

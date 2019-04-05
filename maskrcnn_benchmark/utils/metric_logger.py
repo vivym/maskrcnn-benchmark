@@ -53,6 +53,9 @@ class MetricLogger(object):
             assert isinstance(v, (float, int))
             self.meters[k].update(v)
 
+    def step(self):
+        pass
+
     def __getattr__(self, attr):
         if attr in self.meters:
             return self.meters[attr]
@@ -74,6 +77,7 @@ class TensorboardLogger(MetricLogger):
     def __init__(self, log_dir, start_iter=0, delimiter="\t"):
         super(TensorboardLogger, self).__init__(delimiter)
         self.iteration = start_iter
+        self.cache = {}
         self.writer = self._get_tensorboard_writer(log_dir)
 
     @staticmethod
@@ -95,10 +99,14 @@ class TensorboardLogger(MetricLogger):
 
     def update(self, **kwargs):
         super(TensorboardLogger, self).update(**kwargs)
-        if self.writer is not None:
-            for k, v in kwargs.items():
+        self.cache.update(**kwargs)
+
+    def step(self):
+        if self.writer is not None and self.cache is not None:
+            for k, v in self.cache.items():
                 if isinstance(v, torch.Tensor):
                     v = v.item()
                 assert isinstance(v, (float, int))
                 self.writer.add_scalar(k, v, self.iteration)
-            self.iteration += 1
+        self.iteration += 1
+        self.cache = {}

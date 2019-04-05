@@ -14,15 +14,6 @@ def load_pred(path):
     boxlists = torch.load(path)
     return boxlists
 
-    for boxlist in boxlists:
-        print(boxlist.bbox)
-        print(boxlist.extra_fields)
-        entry = {
-            'filename': '',
-
-        }
-        return
-
 
 def load_images(path):
     objs = {}
@@ -32,11 +23,14 @@ def load_images(path):
     return objs['images']
 
 
+work_dir = 'pred_test_b/'
+
+
 def main():
-    preds = load_pred('./datasets/tianchi_xray/predictions.pth')
+    preds = load_pred('./datasets/tianchi_xray/{}predictions.pth'.format(work_dir))
     print(len(preds))
 
-    images = load_images('./datasets/tianchi_xray/test_no_poly_a.json')
+    images = load_images('./datasets/tianchi_xray/test_no_poly_b.json')
 
     results = []
     for idx, image in enumerate(images):
@@ -69,7 +63,7 @@ def main():
         entry['rects'] = rects
         results.append(entry)
 
-    with open('./datasets/tianchi_xray/submit.json', 'w') as f:
+    with open('./datasets/tianchi_xray/{}submit.json'.format(work_dir), 'w') as f:
         json.dump({
             'results': results
         }, f)

@@ -4,7 +4,7 @@ import torch
 
 
 def main():
-    objs = torch.load('./models/e2e_mask_rcnn_X_101_32x8d_FPN_1x.pth', map_location='cpu')
+    objs = torch.load('../../../data/e2e_mask_rcnn_X_101_32x8d_FPN_1x.pth', map_location='cpu')
     print(objs.keys())
 
     model = objs['model']

@@ -1,0 +1,59 @@
+MODEL:
+  META_ARCHITECTURE: "GeneralizedRCNN"
+  WEIGHT: "models/mask_rcnn_X_101_32x8d_FPN_deform_mixup_0060000_without_box_pred_and_pooler.pth"
+  FORCE_WEIGHT: True
+  BACKBONE:
+    CONV_BODY: "R-101-D-FPN"
+  RESNETS:
+    BACKBONE_OUT_CHANNELS: 256
+    STRIDE_IN_1X1: False
+    NUM_GROUPS: 32
+    WIDTH_PER_GROUP: 8
+  RPN:
+    USE_FPN: True
+    ASPECT_RATIOS: (0.50, 0.92, 1.50)
+    ANCHOR_STRIDE: (4, 8, 16, 32, 64)
+    PRE_NMS_TOP_N_TRAIN: 2000
+    PRE_NMS_TOP_N_TEST: 1000
+    POST_NMS_TOP_N_TEST: 1000
+    FPN_POST_NMS_TOP_N_TEST: 1000
+  ROI_HEADS:
+    USE_FPN: True
+    NMS: 0.65
+    POST_PROCESS_ON: True
+  ROI_BOX_HEAD:
+    POOLER: "PSROIPooling"
+    POOLER_RESOLUTION: 7
+    POOLER_PART_SIZE: 7
+    POOLER_DEFORM_FC_DIM: 512
+    POOLER_SCALES: (0.25, 0.125, 0.0625, 0.03125)
+    POOLER_SAMPLING_RATIO: 2
+    FEATURE_EXTRACTOR: "FPN2MLPFeatureExtractor"
+    PREDICTOR: "FPNPredictor"
+    NUM_CLASSES: 11
+  MASK_ON: False
+  SEED: 233
+DATASETS:
+  # TRAIN: ("tianchi_xray_with_normal_in_coco",)
+  TRAIN: ("tianchi_xray_full_with_normal_in_coco",)
+  TEST: ("tianchi_xray_eval_no_normal_bbox_in_coco",)
+  # TEST: ("tianchi_xray_test_b_in_coco",)
+DATALOADER:
+  SIZE_DIVISIBILITY: 32
+SOLVER:
+  BASE_LR: 0.0025
+  WEIGHT_DECAY: 0.0001
+  STEPS: (40000, 54000)
+  MAX_ITER: 60000
+  IMS_PER_BATCH: 1
+  CHECKPOINT_PERIOD: 400
+INPUT:
+  MIXUP: True
+  NO_MIXUP_ITERS: 3000
+  VFLIP_PROB_TRAIN: 0.0
+  MIN_SIZE_TRAIN: (800, 576, 640, 704, 736, 768, 832, 864, 896, 928, 960)
+  PIXEL_MEAN: [184.026, 211.612, 208.746]
+  HFLIP_PROB_TEST: 0.0
+TEST:
+  IMS_PER_BATCH: 8
+OUTPUT_DIR: "logs/tianchi_xray/mask_rcnn_X_101_32x8d_FPN_deform_mixup2"

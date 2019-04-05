@@ -34,7 +34,6 @@ _C.MODEL.CLS_AGNOSTIC_BBOX_REG = False
 # path
 _C.MODEL.WEIGHT = ""
 _C.MODEL.FORCE_WEIGHT = False
-_C.MODEL.SEED = -1
 
 
 # -----------------------------------------------------------------------------
@@ -58,6 +57,12 @@ _C.INPUT.TO_BGR255 = True
 # Mixup
 _C.INPUT.MIXUP = False
 _C.INPUT.NO_MIXUP_ITERS = 3000
+
+_C.INPUT.HFLIP_PROB_TRAIN = 0.5
+_C.INPUT.VFLIP_PROB_TRAIN = 0.
+_C.INPUT.HFLIP_PROB_TEST = 0.
+_C.INPUT.VFLIP_PROB_TEST = 0.
+
 
 
 # -----------------------------------------------------------------------------
@@ -105,7 +110,7 @@ _C.MODEL.BACKBONE.USE_GN = False
 # FPN options
 # ---------------------------------------------------------------------------- #
 _C.MODEL.FPN = CN()
-_C.MODEL.FPN.USE_GN = False
+_C.MODEL.FPN.NORM_FUNC = ""
 _C.MODEL.FPN.USE_RELU = False
 
 
@@ -167,6 +172,10 @@ _C.MODEL.RPN.FPN_POST_NMS_TOP_N_TEST = 2000
 # Custom rpn head, empty to use default conv or separable conv
 _C.MODEL.RPN.RPN_HEAD = "SingleConvRPNHead"
 
+_C.MODEL.RPN.NMS_METHOD = "vanilla"
+_C.MODEL.RPN.NMS_SIGMA = 0.5
+_C.MODEL.RPN.NMS_MIN_SCORE = 0.001
+
 
 # ---------------------------------------------------------------------------- #
 # ROI HEADS options
@@ -197,18 +206,30 @@ _C.MODEL.ROI_HEADS.POSITIVE_FRACTION = 0.25
 _C.MODEL.ROI_HEADS.SCORE_THRESH = 0.05
 # Overlap threshold used for non-maximum suppression (suppress boxes with
 # IoU >= this threshold)
-_C.MODEL.ROI_HEADS.NMS = 0.5
+_C.MODEL.ROI_HEADS.NMS_THRESH = 0.5
 # Maximum number of detections to return per image (100 is based on the limit
 # established for the COCO dataset)
 _C.MODEL.ROI_HEADS.DETECTIONS_PER_IMG = 100
+
+_C.MODEL.ROI_HEADS.POST_PROCESS_ON = True
+_C.MODEL.ROI_HEADS.NMS_METHOD = "vanilla"
+_C.MODEL.ROI_HEADS.NMS_SIGMA = 0.5
+_C.MODEL.ROI_HEADS.NMS_MIN_SCORE = 0.001
 
 
 _C.MODEL.ROI_BOX_HEAD = CN()
 _C.MODEL.ROI_BOX_HEAD.FEATURE_EXTRACTOR = "ResNet50Conv5ROIFeatureExtractor"
 _C.MODEL.ROI_BOX_HEAD.PREDICTOR = "FastRCNNPredictor"
+_C.MODEL.ROI_BOX_HEAD.POOLER = "ROIAlign"
 _C.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION = 14
 _C.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO = 0
 _C.MODEL.ROI_BOX_HEAD.POOLER_SCALES = (1.0 / 16,)
+_C.MODEL.ROI_BOX_HEAD.POOLER_OUTPUT_DIM = 256 # for psroi pooling
+_C.MODEL.ROI_BOX_HEAD.POOLER_GROUP_SIZE = 1 # for psroi pooling
+_C.MODEL.ROI_BOX_HEAD.POOLER_PART_SIZE = 14 # for psroi pooling
+_C.MODEL.ROI_BOX_HEAD.POOLER_SAMPLE_PER_PART = 4 # for psroi pooling
+_C.MODEL.ROI_BOX_HEAD.POOLER_TRANS_STD = 0.1 # for psroi pooling
+_C.MODEL.ROI_BOX_HEAD.POOLER_DEFORM_FC_DIM = 1024
 _C.MODEL.ROI_BOX_HEAD.NUM_CLASSES = 81
 # Hidden layer dimension when using an MLP for the RoI box head
 _C.MODEL.ROI_BOX_HEAD.MLP_HEAD_DIM = 1024
@@ -218,6 +239,11 @@ _C.MODEL.ROI_BOX_HEAD.USE_GN = False
 _C.MODEL.ROI_BOX_HEAD.DILATION = 1
 _C.MODEL.ROI_BOX_HEAD.CONV_HEAD_DIM = 256
 _C.MODEL.ROI_BOX_HEAD.NUM_STACKED_CONVS = 4
+
+_C.MODEL.ROI_BOX_HEAD.LOSS_FUNC = "cross_entropy" # or softmax_focal_loss
+_C.MODEL.ROI_BOX_HEAD.LOSS_ALPHA = [] # for softmax_focal_loss
+_C.MODEL.ROI_BOX_HEAD.LOSS_GAMMA = 2.
+_C.MODEL.ROI_BOX_HEAD.LOSS_SMOOTH = 0.05
 
 
 _C.MODEL.ROI_MASK_HEAD = CN()
@@ -251,7 +277,7 @@ _C.MODEL.ROI_KEYPOINT_HEAD.NUM_CLASSES = 17
 _C.MODEL.ROI_KEYPOINT_HEAD.SHARE_BOX_FEATURE_EXTRACTOR = True
 
 # ---------------------------------------------------------------------------- #
-# ResNe[X]t options (ResNets = {ResNet, ResNeXt}
+# ResNe[X]t options (ResNets = {ResNet, ResNeXt, Trident*}
 # Note that parts of a resnet may be used for both the backbone and the head
 # These options apply to both
 # ---------------------------------------------------------------------------- #
@@ -278,6 +304,9 @@ _C.MODEL.RESNETS.RES5_DILATION = 1
 _C.MODEL.RESNETS.BACKBONE_OUT_CHANNELS = 256 * 4
 _C.MODEL.RESNETS.RES2_OUT_CHANNELS = 256
 _C.MODEL.RESNETS.STEM_OUT_CHANNELS = 64
+
+# Trident Residual transformation function
+_C.MODEL.RESNETS.TRIDENT_TRANS_FUNC = "TridentBottleneckWithFixedBatchNorm"
 
 
 # ---------------------------------------------------------------------------- #
@@ -418,6 +447,7 @@ _C.TEST.EXPECTED_RESULTS_SIGMA_TOL = 4
 _C.TEST.IMS_PER_BATCH = 8
 # Number of detections per image
 _C.TEST.DETECTIONS_PER_IMG = 100
+_C.TEST.PREDICTIONS_FILE_NAME = "predictions.pth"
 
 
 # ---------------------------------------------------------------------------- #
@@ -426,3 +456,5 @@ _C.TEST.DETECTIONS_PER_IMG = 100
 _C.OUTPUT_DIR = "."
 
 _C.PATHS_CATALOG = os.path.join(os.path.dirname(__file__), "paths_catalog.py")
+
+_C.SEED = -1

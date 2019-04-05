@@ -70,6 +70,8 @@ def main():
     if seed >= 0:
         if distributed:
             seed += args.local_rank
+        import numpy as np
+        np.random.seed(seed)
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed(seed)
@@ -95,6 +97,7 @@ def main():
             mkdir(output_folder)
             output_folders[idx] = output_folder
     data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
+    predictions_file_name = cfg.TEST.PREDICTIONS_FILE_NAME
     for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
         inference(
             model,
@@ -107,6 +110,7 @@ def main():
             expected_results_sigma_tol=cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
             output_folder=output_folder,
             no_eval=args.no_eval,
+            predictions_file_name=predictions_file_name,
         )
         synchronize()
 

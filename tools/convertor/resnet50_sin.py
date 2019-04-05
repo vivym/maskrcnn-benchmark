@@ -6,6 +6,7 @@ import torch
 def main():
     objs = torch.load(
         './models/resnet50_finetune_60_epochs_lr_decay_after_30_start_resnet50_train_45_epochs_combined_IN_SF-ca06340c.pth.tar',
+        # './models/resnet50-19c8e357.pth',
         map_location='cpu'
     )
 
@@ -20,12 +21,22 @@ def main():
             new_key = new_key[7:]
         if new_key.startswith("fc"):
             continue
-        print(new_key)
+        if new_key.startswith("layer4"):
+            continue
+        if new_key.startswith("layer3"):
+            continue
+        if new_key.startswith("layer2"):
+            continue
+        if new_key.startswith("layer1.2"):
+            continue
+        if new_key.startswith("layer1.1"):
+            continue
+        if new_key.startswith("layer1.0"):
+            continue
         type = '' if new_key.startswith('layer') else 'stem.'
         new_key = 'backbone.body.' + type + new_key
+        print(key, '--->', new_key)
         new_dict[new_key] = state_dict[key]
-
-    print(new_dict.keys())
 
     torch.save({
       'model': new_dict,

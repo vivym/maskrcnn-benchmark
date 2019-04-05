@@ -128,6 +128,10 @@ class DatasetCatalog(object):
             "img_dir": "tianchi_xray/test_a",
             "ann_file": "tianchi_xray/test_no_poly_a.json",
         },
+        "tianchi_xray_test_b_in_coco": {
+            "img_dir": "tianchi_xray/test_b",
+            "ann_file": "tianchi_xray/test_no_poly_b.json",
+        },
         "tianchi_xray_with_normal_bbox_in_coco": {
             "img_dir": "tianchi_xray/restricted",
             "ann_file": "tianchi_xray/train_no_poly_with_normal_bbox.json"
@@ -135,6 +139,10 @@ class DatasetCatalog(object):
         "tianchi_xray_with_normal_in_coco": {
             "img_dir": "tianchi_xray/restricted",
             "ann_file": "tianchi_xray/train_no_poly_adapted_ex_eval_with_normal.json"
+        },
+        "tianchi_xray_full_with_normal_in_coco": {
+            "img_dir": "tianchi_xray/restricted",
+            "ann_file": "tianchi_xray/train_no_poly_adapted_full_with_normal.json"
         },
         "tianchi_xray_eval_with_normal_in_coco": {
             "img_dir": "tianchi_xray/restricted",
@@ -146,7 +154,7 @@ class DatasetCatalog(object):
         },
         "tianchi_xray_eval_no_normal_bbox_in_coco": {
             "img_dir": "tianchi_xray/restricted",
-            "ann_file": "tianchi_xray/eval_no_poly_adapted_no_normal_bbox.json"
+            "ann_file": "tianchi_xray/eval_no_poly_adapted_no_normal_bbox_with_area.json"
         },
         "tianchi_xray_with_normal2_in_coco": {
             "img_dir": "tianchi_xray/restricted",

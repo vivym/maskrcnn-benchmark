@@ -70,22 +70,6 @@ def do_coco_evaluation(
     expected_results,
     expected_results_sigma_tol,
 ):
-    if box_only:
-        print("Evaluating bbox proposals")
-        areas = {"all": "", "small": "s", "medium": "m", "large": "l"}
-        res = COCOResults("box_proposal")
-        for limit in [100, 1000]:
-            for area, suffix in areas.items():
-                stats = evaluate_box_proposals(
-                    predictions, dataset, area=area, limit=limit
-                )
-                key = "AR{}@{:d}".format(suffix, limit)
-                res.results["box_proposal"][key] = stats["ar"].item()
-        print(res)
-        check_expected_results(res, expected_results, expected_results_sigma_tol)
-        if output_folder:
-            torch.save(res, os.path.join(output_folder, "box_proposals.pth"))
-        return
     print("Preparing results for COCO format")
     coco_results = {}
     if "bbox" in iou_types:
@@ -113,23 +97,15 @@ def preds_filter(preds, limit):
     cnt2 = 0
     for pred in preds:
         extra_fields = pred.extra_fields
-        deleted_ids = []
+        selected_ids = []
         for idx, score in enumerate(extra_fields['scores']):
-            if score < limit:
-                deleted_ids.append(idx)
-            elif extra_fields['labels'][idx] not in range(1, 6):
-                deleted_ids.append(idx)
+            if score > limit and extra_fields['labels'][idx] in range(1, 6):
+                selected_ids.append(idx)
 
-        extra_fields['scores'] = list(filter(lambda x: x[0] not in deleted_ids, enumerate(extra_fields['scores'])))
-        extra_fields['scores'] = list(map(lambda x: x[1], extra_fields['scores']))
-        extra_fields['scores'] = torch.FloatTensor(extra_fields['scores'])
-        extra_fields['labels'] = list(filter(lambda x: x[0] not in deleted_ids, enumerate(extra_fields['labels'])))
-        extra_fields['labels'] = list(map(lambda x: x[1], extra_fields['labels']))
-        extra_fields['labels'] = torch.tensor(extra_fields['labels'])
+        extra_fields['scores'] = extra_fields['scores'][selected_ids]
+        extra_fields['labels'] = extra_fields['labels'][selected_ids]
         cnt1 = cnt1 + pred.bbox.size(0)
-        pred.bbox = list(filter(lambda x: x[0] not in deleted_ids, enumerate(pred.bbox.tolist())))
-        pred.bbox = list(map(lambda x: x[1], pred.bbox))
-        pred.bbox = torch.FloatTensor(pred.bbox)
+        pred.bbox = pred.bbox[selected_ids]
         cnt2 = cnt2 + pred.bbox.size(0)
 
     print('bbox: ', cnt1, 'to', cnt2)

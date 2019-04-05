@@ -15,14 +15,7 @@ class ResNet50Conv5ROIFeatureExtractor(nn.Module):
     def __init__(self, config, in_channels):
         super(ResNet50Conv5ROIFeatureExtractor, self).__init__()
 
-        resolution = config.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
-        scales = config.MODEL.ROI_BOX_HEAD.POOLER_SCALES
-        sampling_ratio = config.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
-        pooler = Pooler(
-            output_size=(resolution, resolution),
-            scales=scales,
-            sampling_ratio=sampling_ratio,
-        )
+        pooler = Pooler(config.MODEL.ROI_BOX_HEAD)
 
         stage = resnet.StageSpec(index=4, block_count=3, return_features=False)
         head = resnet.ResNetHead(
@@ -56,13 +49,9 @@ class FPN2MLPFeatureExtractor(nn.Module):
         super(FPN2MLPFeatureExtractor, self).__init__()
 
         resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
-        scales = cfg.MODEL.ROI_BOX_HEAD.POOLER_SCALES
-        sampling_ratio = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
-        pooler = Pooler(
-            output_size=(resolution, resolution),
-            scales=scales,
-            sampling_ratio=sampling_ratio,
-        )
+
+        pooler = Pooler(cfg.MODEL.ROI_BOX_HEAD)
+
         input_size = in_channels * resolution ** 2
         representation_size = cfg.MODEL.ROI_BOX_HEAD.MLP_HEAD_DIM
         use_gn = cfg.MODEL.ROI_BOX_HEAD.USE_GN
@@ -91,13 +80,7 @@ class FPNXconv1fcFeatureExtractor(nn.Module):
         super(FPNXconv1fcFeatureExtractor, self).__init__()
 
         resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
-        scales = cfg.MODEL.ROI_BOX_HEAD.POOLER_SCALES
-        sampling_ratio = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
-        pooler = Pooler(
-            output_size=(resolution, resolution),
-            scales=scales,
-            sampling_ratio=sampling_ratio,
-        )
+        pooler = Pooler(cfg.MODEL.ROI_BOX_HEAD)
         self.pooler = pooler
 
         use_gn = cfg.MODEL.ROI_BOX_HEAD.USE_GN
@@ -141,6 +124,58 @@ class FPNXconv1fcFeatureExtractor(nn.Module):
         x = self.xconvs(x)
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc6(x))
+        return x
+
+
+@registry.ROI_BOX_FEATURE_EXTRACTORS.register("FPNDetNetFeatureExtractor")
+class FPNDetNetFeatureExtractor(nn.Module):
+    """
+    Heads for FPN for classification
+    """
+
+    def __init__(self, cfg, in_channels):
+        super(FPNDetNetFeatureExtractor, self).__init__()
+
+        resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
+
+        pooler = Pooler(cfg.MODEL.ROI_BOX_HEAD)
+
+        input_size = in_channels * resolution ** 2
+        self.use_gn = cfg.MODEL.ROI_BOX_HEAD.USE_GN
+        self.pooler = pooler
+        self.fc6 = nn.Conv2d(
+            in_channels,
+            in_channels * 4,
+            kernel_size=resolution,
+            stride=resolution,
+            padding=0,
+            bias=False if self.use_gn else True,
+        )
+        if self.use_gn:
+            self.gn6 = group_norm(in_channels * 4)
+        self.fc7 = nn.Conv2d(
+            in_channels * 4,
+            in_channels * 4,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            bias=False if self.use_gn else True,
+        )
+        if self.use_gn:
+            self.gn7 = group_norm(in_channels * 4)
+        self.out_channels = in_channels * 4
+
+    def forward(self, x, proposals):
+        x = self.pooler(x, proposals)
+
+        x = F.relu(self.fc6(x))
+        if self.use_gn:
+            x = self.gn6(x)
+        x = F.relu(self.fc7(x))
+        if self.use_gn:
+            x = self.gn7(x)
+        x = x.mean(3).mean(2)
+
         return x
 
 

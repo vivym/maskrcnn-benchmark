@@ -4,8 +4,10 @@ import torch.nn.functional as F
 from torch import nn
 
 from maskrcnn_benchmark.layers import ROIAlign
+from maskrcnn_benchmark.layers.dcn import DeformRoIPoolingPack
 
 from .utils import cat
+from . import registry
 
 
 class LevelMapper(object):
@@ -52,7 +54,7 @@ class Pooler(nn.Module):
     which is available thanks to the BoxList.
     """
 
-    def __init__(self, output_size, scales, sampling_ratio):
+    def __init__(self, cfg):
         """
         Arguments:
             output_size (list[tuple[int]] or list[int]): output size for the pooled region
@@ -60,15 +62,19 @@ class Pooler(nn.Module):
             sampling_ratio (int): sampling ratio for ROIAlign
         """
         super(Pooler, self).__init__()
+
+        resolution = cfg.POOLER_RESOLUTION
+        scales = cfg.POOLER_SCALES
+
+        pooler_builder = registry.POOLER[cfg.POOLER]
+
         poolers = []
         for scale in scales:
             poolers.append(
-                ROIAlign(
-                    output_size, spatial_scale=scale, sampling_ratio=sampling_ratio
-                )
+                pooler_builder(cfg, scale)
             )
         self.poolers = nn.ModuleList(poolers)
-        self.output_size = output_size
+        self.output_size = (resolution, resolution)
         # get the levels in the feature map by leveraging the fact that the network always
         # downsamples by a factor of 2 at each level.
         lvl_min = -torch.log2(torch.tensor(scales[0], dtype=torch.float32)).item()
@@ -119,6 +125,37 @@ class Pooler(nn.Module):
             result[idx_in_level] = pooler(per_level_feature, rois_per_level)
 
         return result
+
+
+@registry.POOLER.register("ROIAlign")
+def _make_roi_align(cfg, scale):
+    resolution = cfg.POOLER_RESOLUTION
+    sampling_ratio = cfg.POOLER_SAMPLING_RATIO
+
+    return ROIAlign((resolution, resolution), spatial_scale=scale, sampling_ratio=sampling_ratio)
+
+
+@registry.POOLER.register("PSROIPooling")
+def _make_psroi_pooling(cfg, scale):
+    resolution = cfg.POOLER_RESOLUTION
+    output_dim = cfg.POOLER_OUTPUT_DIM
+    group_size = cfg.POOLER_GROUP_SIZE
+    part_size = cfg.POOLER_PART_SIZE
+    sample_per_part = cfg.POOLER_SAMPLE_PER_PART
+    trans_std = cfg.POOLER_TRANS_STD
+    deform_fc_dim = cfg.POOLER_DEFORM_FC_DIM
+
+    return DeformRoIPoolingPack(
+        spatial_scale=scale,
+        pooled_size=resolution,
+        output_dim=output_dim,
+        no_trans=False,
+        group_size=group_size,
+        part_size=part_size,
+        sample_per_part=sample_per_part,
+        trans_std=trans_std,
+        deform_fc_dim=deform_fc_dim,
+    )
 
 
 def make_pooler(cfg, head_name):

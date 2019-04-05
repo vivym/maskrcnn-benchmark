@@ -7,6 +7,9 @@ from maskrcnn_benchmark.modeling import registry
 from maskrcnn_benchmark.modeling.make_layers import conv_with_kaiming_uniform
 from . import fpn as fpn_module
 from . import resnet
+from . import resnet_deform
+from . import detnet
+# from . import trident_resnet
 
 
 @registry.BACKBONES.register("R-50-C4")
@@ -36,7 +39,7 @@ def build_resnet_fpn_backbone(cfg):
         ],
         out_channels=out_channels,
         conv_block=conv_with_kaiming_uniform(
-            cfg.MODEL.FPN.USE_GN, cfg.MODEL.FPN.USE_RELU
+            cfg.MODEL.FPN.NORM_FUNC, cfg.MODEL.FPN.USE_RELU
         ),
         top_blocks=fpn_module.LastLevelMaxPool(),
     )
@@ -62,9 +65,114 @@ def build_resnet_fpn_p3p7_backbone(cfg):
         ],
         out_channels=out_channels,
         conv_block=conv_with_kaiming_uniform(
-            cfg.MODEL.FPN.USE_GN, cfg.MODEL.FPN.USE_RELU
+            cfg.MODEL.FPN.NORM_FUNC, cfg.MODEL.FPN.USE_RELU
         ),
         top_blocks=fpn_module.LastLevelP6P7(in_channels_p6p7, out_channels),
+    )
+    model = nn.Sequential(OrderedDict([("body", body), ("fpn", fpn)]))
+    model.out_channels = out_channels
+    return model
+
+
+"""
+@registry.BACKBONES.register("T-R-50-C5")
+@registry.BACKBONES.register("T-R-101-C5")
+def build_trident_resnet_backbone(cfg):
+    body = trident_resnet.TridentResNet(cfg)
+    model = nn.Sequential(OrderedDict([("body", body)]))
+    model.out_channels = cfg.MODEL.RESNETS.BACKBONE_OUT_CHANNELS
+    return model
+
+
+@registry.BACKBONES.register("T-R-50-FPN")
+@registry.BACKBONES.register("T-R-101-FPN")
+@registry.BACKBONES.register("T-R-152-FPN")
+def build_trident_resnet_fpn_backbone(cfg):
+    body = trident_resnet.TridentResNet(cfg)
+    in_channels_stage2 = cfg.MODEL.RESNETS.RES2_OUT_CHANNELS
+    out_channels = cfg.MODEL.RESNETS.BACKBONE_OUT_CHANNELS
+    fpn = fpn_module.FPN(
+        in_channels_list=[
+            in_channels_stage2,
+            in_channels_stage2 * 2,
+            in_channels_stage2 * 4,
+            in_channels_stage2 * 8,
+        ],
+        out_channels=out_channels,
+        conv_block=conv_with_kaiming_uniform(
+            cfg.MODEL.FPN.NORM_FUNC, cfg.MODEL.FPN.USE_RELU
+        ),
+        top_blocks=fpn_module.LastLevelMaxPool(),
+    )
+    model = nn.Sequential(OrderedDict([("body", body), ("fpn", fpn)]))
+    model.out_channels = out_channels
+    return model
+"""
+
+
+@registry.BACKBONES.register("R-50-D-C4")
+@registry.BACKBONES.register("R-50-D-C5")
+@registry.BACKBONES.register("R-101-D-C4")
+@registry.BACKBONES.register("R-101-D-C5")
+def build_resnet_deform_backbone(cfg):
+    body = resnet_deform.ResNet(cfg)
+    model = nn.Sequential(OrderedDict([("body", body)]))
+    model.out_channels = cfg.MODEL.RESNETS.BACKBONE_OUT_CHANNELS
+    return model
+
+
+@registry.BACKBONES.register("R-50-D-FPN")
+@registry.BACKBONES.register("R-101-D-FPN")
+@registry.BACKBONES.register("R-152-D-FPN")
+def build_resnet_deform_fpn_backbone(cfg):
+    body = resnet_deform.ResNet(cfg)
+    in_channels_stage2 = cfg.MODEL.RESNETS.RES2_OUT_CHANNELS
+    out_channels = cfg.MODEL.RESNETS.BACKBONE_OUT_CHANNELS
+    fpn = fpn_module.FPN(
+        in_channels_list=[
+            in_channels_stage2,
+            in_channels_stage2 * 2,
+            in_channels_stage2 * 4,
+            in_channels_stage2 * 8,
+        ],
+        out_channels=out_channels,
+        conv_block=conv_with_kaiming_uniform(
+            cfg.MODEL.FPN.NORM_FUNC, cfg.MODEL.FPN.USE_RELU
+        ),
+        top_blocks=fpn_module.LastLevelMaxPool(),
+    )
+    model = nn.Sequential(OrderedDict([("body", body), ("fpn", fpn)]))
+    model.out_channels = out_channels
+    return model
+
+
+@registry.BACKBONES.register("D-59-C6")
+def build_detnet_backbone(cfg):
+    body = detnet.DetNet(cfg)
+    model = nn.Sequential(OrderedDict([("body", body)]))
+    model.out_channels = cfg.MODEL.RESNETS.BACKBONE_OUT_CHANNELS
+    return model
+
+
+@registry.BACKBONES.register("D-59-FPN")
+@registry.BACKBONES.register("D-59-D-FPN")
+def build_detnet_fpn_backbone(cfg):
+    body = detnet.DetNet(cfg)
+    in_channels_stage2 = cfg.MODEL.RESNETS.RES2_OUT_CHANNELS
+    out_channels = cfg.MODEL.RESNETS.BACKBONE_OUT_CHANNELS
+    fpn = fpn_module.FPN_detnet(
+        in_channels_list=[
+            in_channels_stage2,
+            in_channels_stage2 * 2,
+            in_channels_stage2 * 4,
+            in_channels_stage2 * 4,
+            in_channels_stage2 * 4,
+        ],
+        out_channels=out_channels,
+        conv_block=conv_with_kaiming_uniform(
+            cfg.MODEL.FPN.NORM_FUNC, cfg.MODEL.FPN.USE_RELU
+        ),
+        top_blocks=None,
     )
     model = nn.Sequential(OrderedDict([("body", body), ("fpn", fpn)]))
     model.out_channels = out_channels

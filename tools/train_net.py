@@ -17,6 +17,7 @@ from maskrcnn_benchmark.utils.env import setup_environment  # noqa F401 isort:sk
 
 
 import torch
+import torch.backends.cudnn as cudnn
 from maskrcnn_benchmark.config import cfg
 from maskrcnn_benchmark.data import make_data_loader
 from maskrcnn_benchmark.solver import make_lr_scheduler
@@ -32,6 +33,12 @@ from maskrcnn_benchmark.utils.logger import setup_logger
 from maskrcnn_benchmark.utils.miscellaneous import mkdir
 from maskrcnn_benchmark.utils.metric_logger import MetricLogger, TensorboardLogger
 
+try:
+    from apex.parallel import DistributedDataParallel
+except ImportError:
+    raise ImportError(
+        "Please install apex from https://www.github.com/nvidia/apex .")
+
 
 def train(cfg, local_rank, distributed, use_tensorboard):
     model = build_detection_model(cfg)
@@ -42,15 +49,18 @@ def train(cfg, local_rank, distributed, use_tensorboard):
     scheduler = make_lr_scheduler(cfg, optimizer)
 
     if distributed:
+        """
         model = torch.nn.parallel.DistributedDataParallel(
             model, device_ids=[local_rank], output_device=local_rank,
             # this should be removed if we update BatchNorm stats
-            broadcast_buffers=False,
+            broadcast_buffers=True,
         )
+        """
+        # model = DistributedDataParallel(model)
 
     arguments = {}
     arguments["iteration"] = 0
-    seed = cfg.MODEL.SEED
+    seed = cfg.SEED
     arguments["seed"] = seed
 
     output_dir = cfg.OUTPUT_DIR
@@ -129,6 +139,7 @@ def run_test(cfg, model, distributed):
 
 
 def main():
+    cudnn.benchmark = True
     parser = argparse.ArgumentParser(description="PyTorch Object Detection Training")
     parser.add_argument(
         "--config-file",
@@ -191,10 +202,12 @@ def main():
         logger.info(config_str)
     logger.info("Running with config:\n{}".format(cfg))
 
-    seed = cfg.MODEL.SEED
+    seed = cfg.SEED
     if seed >= 0:
         if args.distributed:
             seed += args.local_rank
+        import numpy as np
+        np.random.seed(seed)
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed(seed)

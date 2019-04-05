@@ -16,17 +16,13 @@ from maskrcnn_benchmark.utils.env import setup_environment  # noqa F401 isort:sk
 import torch
 from maskrcnn_benchmark.config import cfg
 from maskrcnn_benchmark.data import make_data_loader
-from maskrcnn_benchmark.engine.inference import inference
+from maskrcnn_benchmark.engine.inference import inference, inference_ms
 from maskrcnn_benchmark.modeling.detector import build_detection_model
 from maskrcnn_benchmark.utils.checkpoint import DetectronCheckpointer
 from maskrcnn_benchmark.utils.collect_env import collect_env_info
 from maskrcnn_benchmark.utils.comm import synchronize, get_rank
 from maskrcnn_benchmark.utils.logger import setup_logger
 from maskrcnn_benchmark.utils.miscellaneous import mkdir
-
-
-def pred_filter(pred):
-    return True
 
 
 def main():
@@ -100,7 +96,7 @@ def main():
             output_folders[idx] = output_folder
     data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
     for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
-        inference(
+        inference_ms(
             model,
             data_loader_val,
             dataset_name=dataset_name,
@@ -111,7 +107,6 @@ def main():
             expected_results_sigma_tol=cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
             output_folder=output_folder,
             no_eval=args.no_eval,
-            pred_filter=pred_filter,
         )
         synchronize()
 

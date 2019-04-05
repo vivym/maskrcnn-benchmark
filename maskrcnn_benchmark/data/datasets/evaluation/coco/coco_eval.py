@@ -310,8 +310,8 @@ def evaluate_predictions_on_coco(
     with open(json_result_file, "w") as f:
         json.dump(coco_results, f)
 
-    from pycocotools.coco import COCO
-    from pycocotools.cocoeval import COCOeval
+    from maskrcnn_benchmark.utils.pycocotools.coco import COCO
+    from maskrcnn_benchmark.utils.pycocotools.cocoeval import COCOeval
 
     coco_dt = coco_gt.loadRes(str(json_result_file)) if coco_results else COCO()
 
@@ -353,7 +353,7 @@ class COCOResults(object):
     def update(self, coco_eval):
         if coco_eval is None:
             return
-        from pycocotools.cocoeval import COCOeval
+        from maskrcnn_benchmark.utils.pycocotools.cocoeval import COCOeval
 
         assert isinstance(coco_eval, COCOeval)
         s = coco_eval.stats
@@ -361,7 +361,7 @@ class COCOResults(object):
         res = self.results[iou_type]
         metrics = COCOResults.METRICS[iou_type]
         for idx, metric in enumerate(metrics):
-            res[metric] = s[idx]
+            res[metric] = s[idx].tolist()
 
     def __repr__(self):
         # TODO make it pretty

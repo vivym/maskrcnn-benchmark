@@ -123,10 +123,13 @@ def main():
             output_folders[idx] = output_folder
 
     patt = re.compile(r'^model_(\d+).pth$')
-    names = filter(lambda x: patt.match(x), os.listdir(cfg.OUTPUT_DIR))
+    names = list(os.listdir(os.path.join(cfg.OUTPUT_DIR)))
+    names = filter(lambda x: patt.match(x), names)
     names = list(map(lambda x: (patt.match(x).group(1), x), names))
     names.sort(key=lambda x: x[0])
+    # names.reverse()
     for iter, name in names:
+        iter = int(iter)
         _ = checkpointer.load(os.path.join(cfg.OUTPUT_DIR, name))
 
         run_test(

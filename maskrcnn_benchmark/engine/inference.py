@@ -63,6 +63,7 @@ def inference(
         output_folder=None,
         no_eval=False,
         pred_filter=None,
+        predictions_file_name="predictions.pth",
 ):
     # convert to a torch.device for efficiency
     device = torch.device(device)
@@ -90,7 +91,7 @@ def inference(
         return
 
     if output_folder:
-        torch.save(predictions, os.path.join(output_folder, "predictions.pth"))
+        torch.save(predictions, os.path.join(output_folder, predictions_file_name))
 
     extra_args = dict(
         box_only=box_only,
@@ -104,3 +105,42 @@ def inference(
                         predictions=predictions,
                         output_folder=output_folder,
                         **extra_args)
+
+def inference_ms(
+        model,
+        data_loader,
+        dataset_name,
+        iou_types=("bbox",),
+        box_only=False,
+        device="cuda",
+        expected_results=(),
+        expected_results_sigma_tol=4,
+        output_folder=None,
+        no_eval=False,
+        pred_filter=None,
+):
+    # convert to a torch.device for efficiency
+    device = torch.device(device)
+    num_devices = get_world_size()
+    logger = logging.getLogger("maskrcnn_benchmark.inference")
+    dataset = data_loader.dataset
+    logger.info("Start evaluation on {} dataset({} images).".format(dataset_name, len(dataset)))
+    start_time = time.time()
+    predictions = compute_on_dataset(model, data_loader, device)
+    # wait for all processes to complete before measuring the time
+    synchronize()
+    total_time = time.time() - start_time
+    total_time_str = str(datetime.timedelta(seconds=total_time))
+    logger.info(
+        "Total inference time: {} ({} s / img per device, on {} devices)".format(
+            total_time_str, total_time * num_devices / len(dataset), num_devices
+        )
+    )
+
+    predictions = _accumulate_predictions_from_multiple_gpus(predictions)
+    if pred_filter is not None:
+        predictions = list(filter(pred_filter, predictions))
+
+    if not is_main_process():
+        return
+

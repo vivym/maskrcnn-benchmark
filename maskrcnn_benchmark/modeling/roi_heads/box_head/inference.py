@@ -22,7 +22,11 @@ class PostProcessor(nn.Module):
         nms=0.5,
         detections_per_img=100,
         box_coder=None,
-        cls_agnostic_bbox_reg=False
+        cls_agnostic_bbox_reg=False,
+        post_process_on=True,
+        nms_method='vanilla',
+        nms_sigma=0.3,
+        nms_min_score=0.1,
     ):
         """
         Arguments:
@@ -39,6 +43,10 @@ class PostProcessor(nn.Module):
             box_coder = BoxCoder(weights=(10., 10., 5., 5.))
         self.box_coder = box_coder
         self.cls_agnostic_bbox_reg = cls_agnostic_bbox_reg
+        self.post_process_on = post_process_on
+        self.nms_method = nms_method
+        self.nms_sigma = nms_sigma
+        self.nms_min_score = nms_min_score
 
     def forward(self, x, boxes):
         """
@@ -122,9 +130,13 @@ class PostProcessor(nn.Module):
             boxes_j = boxes[inds, j * 4 : (j + 1) * 4]
             boxlist_for_class = BoxList(boxes_j, boxlist.size, mode="xyxy")
             boxlist_for_class.add_field("scores", scores_j)
-            boxlist_for_class = boxlist_nms(
-                boxlist_for_class, self.nms
-            )
+            if self.post_process_on:
+                boxlist_for_class = boxlist_nms(
+                    boxlist_for_class, self.nms,
+                    method=self.nms_method,
+                    sigma=self.nms_sigma,
+                    min_score=self.nms_min_score,
+                )
             num_labels = len(boxlist_for_class)
             boxlist_for_class.add_field(
                 "labels", torch.full((num_labels,), j, dtype=torch.int64, device=device)
@@ -135,7 +147,7 @@ class PostProcessor(nn.Module):
         number_of_detections = len(result)
 
         # Limit to max_per_image detections **over all classes**
-        if number_of_detections > self.detections_per_img > 0:
+        if self.post_process_on and number_of_detections > self.detections_per_img > 0:
             cls_scores = result.get_field("scores")
             image_thresh, _ = torch.kthvalue(
                 cls_scores.cpu(), number_of_detections - self.detections_per_img + 1
@@ -153,15 +165,24 @@ def make_roi_box_post_processor(cfg):
     box_coder = BoxCoder(weights=bbox_reg_weights)
 
     score_thresh = cfg.MODEL.ROI_HEADS.SCORE_THRESH
-    nms_thresh = cfg.MODEL.ROI_HEADS.NMS
+    nms_thresh = cfg.MODEL.ROI_HEADS.NMS_THRESH
+    nms_method = cfg.MODEL.ROI_HEADS.NMS_METHOD
+    nms_extra_argv = {}
+    if nms_method == "soft_nms":
+        nms_extra_argv["sigma"] = cfg.MODEL.ROI_HEADS.NMS_SIGMA
+        nms_extra_argv["min_score"] = cfg.MODEL.ROI_HEADS.NMS_MIN_SCORE
     detections_per_img = cfg.MODEL.ROI_HEADS.DETECTIONS_PER_IMG
     cls_agnostic_bbox_reg = cfg.MODEL.CLS_AGNOSTIC_BBOX_REG
+    post_process_on = cfg.MODEL.ROI_HEADS.POST_PROCESS_ON
 
     postprocessor = PostProcessor(
         score_thresh,
         nms_thresh,
         detections_per_img,
         box_coder,
-        cls_agnostic_bbox_reg
+        cls_agnostic_bbox_reg,
+        post_process_on,
+        nms_method,
+        nms_extra_argv,
     )
     return postprocessor
