@@ -89,8 +89,6 @@ def train(cfg, local_rank, distributed, use_tensorboard):
     else:
         meters = MetricLogger(delimiter="  ")
 
-    synchronize()
-
     do_train(
         model,
         data_loader,

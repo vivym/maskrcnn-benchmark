@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 from maskrcnn_benchmark.layers import FrozenBatchNorm2d
 from maskrcnn_benchmark.layers import Conv2d
-from maskrcnn_benchmark.layers.dcn import ModulatedDeformConvPack
+from maskrcnn_benchmark.ops.dcn import ModulatedDeformConvPack
 from maskrcnn_benchmark.modeling.make_layers import group_norm
 from maskrcnn_benchmark.utils.registry import Registry
 

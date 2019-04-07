@@ -54,6 +54,7 @@ def do_train(
     model.train()
     start_training_time = time.time()
     end = time.time()
+    cnt = 0
     for iteration, (images, targets, *extras) in enumerate(data_loader, start_iter):
         data_time = time.time() - end
         iteration = iteration + 1

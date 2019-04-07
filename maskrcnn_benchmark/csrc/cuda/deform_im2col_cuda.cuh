@@ -15,9 +15,10 @@
       i += blockDim.x * gridDim.x)
 
 const int CUDA_NUM_THREADS = 1024;
+const int kMaxGridNum = 65535;
 inline int GET_BLOCKS(const int N)
 {
-  return (N + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS;
+  return std::min(kMaxGridNum, (N + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS);
 }
 
 template <typename scalar_t>

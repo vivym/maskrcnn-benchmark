@@ -26,7 +26,7 @@ def make_lr_scheduler(cfg, optimizer):
     if scheduler == "WarmupMultiStepLR":
         return WarmupMultiStepLR(
             optimizer,
-            # cfg.SOLVER.STEPS,
+            cfg.SOLVER.STEPS,
             cfg.SOLVER.GAMMA,
             warmup_factor=cfg.SOLVER.WARMUP_FACTOR,
             warmup_iters=cfg.SOLVER.WARMUP_ITERS,

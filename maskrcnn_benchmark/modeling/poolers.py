@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from maskrcnn_benchmark.layers import ROIAlign
-from maskrcnn_benchmark.layers.dcn import DeformRoIPoolingPack
+from maskrcnn_benchmark.ops.dcn import ModulatedDeformRoIPoolingPack
 
 from .utils import cat
 from . import registry
@@ -145,16 +145,16 @@ def _make_psroi_pooling(cfg, scale):
     trans_std = cfg.POOLER_TRANS_STD
     deform_fc_dim = cfg.POOLER_DEFORM_FC_DIM
 
-    return DeformRoIPoolingPack(
+    return ModulatedDeformRoIPoolingPack(
         spatial_scale=scale,
-        pooled_size=resolution,
-        output_dim=output_dim,
+        out_size=resolution,
+        out_channels=output_dim,
         no_trans=False,
         group_size=group_size,
         part_size=part_size,
         sample_per_part=sample_per_part,
         trans_std=trans_std,
-        deform_fc_dim=deform_fc_dim,
+        deform_fc_channels=deform_fc_dim,
     )
 
 

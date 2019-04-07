@@ -12,6 +12,7 @@ is implemented
 import math
 import torch
 from torch.nn.modules.utils import _ntuple
+import torch.nn.functional as F
 
 
 class _NewEmptyTensorOp(torch.autograd.Function):
@@ -32,15 +33,20 @@ class Conv2d(torch.nn.Conv2d):
         super(Conv2d, self).__init__(in_channels, out_channels,
                                      kernel_size=kernel_size, stride=stride, padding=padding,
                                      groups=groups, bias=bias, dilation=dilation)
+        self.weight_standardization = weight_standardization
 
     def forward(self, x):
         if x.numel() > 0:
-            weight = self.weight
-            weight_mean = weight.mean(dim=1, keepdim=True).mean(dim=2,
-                                                                keepdim=True).mean(dim=3, keepdim=True)
-            weight = weight - weight_mean
-            std = weight.view(weight.size(0), -1).std(dim=1).view(-1, 1, 1, 1) + 1e-5
-            weight = weight / std.expand_as(weight)
+            if self.weight_standardization:
+                weight = self.weight
+                weight_mean = weight.mean(dim=1, keepdim=True).mean(dim=2,
+                                                                    keepdim=True).mean(dim=3, keepdim=True)
+                weight = weight - weight_mean
+                std = weight.view(weight.size(0), -1).std(dim=1).view(-1, 1, 1, 1) + 1e-5
+                weight = weight / std.expand_as(weight)
+
+                return F.conv2d(input, weight, self.bias, self.stride,
+                                self.padding, self.dilation, self.groups)
             return super(Conv2d, self).forward(x)
         # get output shape
 
