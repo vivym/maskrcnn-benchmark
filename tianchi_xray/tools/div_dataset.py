@@ -42,6 +42,7 @@ eval_images = images[1800:]
 train_ann_count = sum(map(lambda x: len(img_id_2_anns[x['id']]), train_images))
 eval_ann_count = sum(map(lambda x: len(img_id_2_anns[x['id']]), eval_images))
 
+print(train_ann_count, eval_ann_count)
 print(train_ann_count / len(train_images), eval_ann_count / len(eval_images))
 
 eval_anns = []
@@ -60,7 +61,7 @@ eval_dataset = {
     'annotations': eval_anns,
 }
 
-with open(os.path.join(dataset_root, 'eval.json')) as f:
+with open(os.path.join(dataset_root, 'eval.json'), 'w') as f:
     json.dump(eval_dataset, f)
 
 normal_images = []
@@ -78,3 +79,18 @@ for id, name in enumerate(os.listdir(os.path.join(dataset_root, 'normal'))):
         "width": width,
         "license": 1,
     }
+    normal_images.append(img)
+
+train_dataset = {
+    'info': dataset['info'],
+    'licenses': dataset['licenses'],
+    'categories': dataset['categories'],
+    'images': train_images,
+    'annotations': train_anns,
+    'extra_images': normal_images,
+}
+
+print(len(normal_images))
+
+with open(os.path.join(dataset_root, 'train.json'), 'w') as f:
+    json.dump(train_dataset, f)

@@ -1,6 +1,6 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
-  WEIGHT: "models/share/e2e_mask_rcnn_X_101_32x8d_FPN_1x_without_box_and_mask.pth"
+  WEIGHT: "models/e2e_mask_rcnn_X_101_32x8d_FPN_1x_without_predictor.pth"
   FORCE_WEIGHT: True
   BACKBONE:
     CONV_BODY: "R-101-D-FPN"
@@ -23,7 +23,7 @@ MODEL:
     NMS_THRESH: 0.5
     POST_PROCESS_ON: True
   ROI_BOX_HEAD:
-    POOLER: "PSROIPooling"
+    # POOLER: "PSROIPooling"
     POOLER_RESOLUTION: 7
     POOLER_PART_SIZE: 7
     POOLER_DEFORM_FC_DIM: 1024
@@ -31,21 +31,27 @@ MODEL:
     POOLER_SAMPLING_RATIO: 2
     FEATURE_EXTRACTOR: "FPN2MLPFeatureExtractor"
     PREDICTOR: "FPNPredictor"
-    NUM_CLASSES: 11
-    USE_GN: False
+    NUM_CLASSES: 6
     CLASS_LOSS_FUNC: "CrossEntropyLoss"
     CLASS_LOSS_SMOOTH_EPS: 0.01
     CLASS_LOSS_SMOOTH_DIST: []
-  MASK_ON: False
+  ROI_MASK_HEAD:
+    POOLER_SCALES: (0.25, 0.125, 0.0625, 0.03125)
+    FEATURE_EXTRACTOR: "MaskRCNNFPNFeatureExtractor"
+    PREDICTOR: "MaskRCNNC4Predictor"
+    POOLER_RESOLUTION: 14
+    POOLER_SAMPLING_RATIO: 2
+    RESOLUTION: 28
+    SHARE_BOX_FEATURE_EXTRACTOR: False
+  MASK_ON: True
 DATASETS:
-  TRAIN: ("tianchi_xray_with_normal_in_coco",)
-  TEST: ("tianchi_xray_eval_no_normal_bbox_in_coco",)
+  TRAIN: ("round2_train",)
+  TEST: ("round2_eval",)
 DATALOADER:
   SIZE_DIVISIBILITY: 32
 SOLVER:
   BASE_LR: 0.0025
   WEIGHT_DECAY: 0.0001
-  STEPS: (40000, 54000)
   MAX_ITER: 60000
   IMS_PER_BATCH: 1
   WARMUP_ITERS: 500

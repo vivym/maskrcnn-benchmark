@@ -1,3 +1,5 @@
+import os
+import random
 import torch
 import torch.utils.data as data
 import numpy as np
@@ -51,8 +53,16 @@ class MixupDetection(data.Dataset):
                 img1, target1 = self.transform(img1, target1)
             return img1, target1, idx
 
-        idx2 = np.random.choice(np.delete(np.arange(len(self)), idx))
-        img2, target2, _ = self.dataset[idx2]
+        if 'extra_images' in self.dataset.coco.dataset and random.randrange(10) < 5:
+            extra_images = self.dataset.coco.dataset['extra_images']
+            img_info = extra_images[random.randrange(len(extra_images))]
+            dataset_root = self.dataset.root
+            img2 = Image.open(os.path.join(dataset_root, img_info['file_name']))
+            target2 = None
+        else:
+            idx2 = np.random.choice(np.delete(np.arange(len(self)), idx))
+            img2, target2, _ = self.dataset[idx2]
+
 
         img1 = np.array(img1, dtype='float32')
         img2 = np.array(img2, dtype='float32')
@@ -65,16 +75,19 @@ class MixupDetection(data.Dataset):
         mixed_img = mixed_img.astype('uint8')
         mixed_img = Image.fromarray(mixed_img)
 
-        assert target1.mode == target2.mode
-        mixed_target = BoxList(
-            bbox=torch.cat((target1.bbox, target2.bbox)).to(target1.bbox.device),
-            image_size=(width, height),
-            mode=target1.mode
-        )
-        mixed_target.extra_fields['labels'] = torch.cat((
-            target1.extra_fields['labels'],
-            target2.extra_fields['labels'],
-        )).to(target1.extra_fields['labels'].device)
+        if target2 is not None:
+            assert target1.mode == target2.mode
+            mixed_target = BoxList(
+                bbox=torch.cat((target1.bbox, target2.bbox)).to(target1.bbox.device),
+                image_size=(width, height),
+                mode=target1.mode
+            )
+            mixed_target.extra_fields['labels'] = torch.cat((
+                target1.extra_fields['labels'],
+                target2.extra_fields['labels'],
+            )).to(target1.extra_fields['labels'].device)
+        else:
+            mixed_target = target1
 
         if self.transform is not None:
             mixed_img, mixed_target = self.transform(mixed_img, mixed_target)

@@ -28,14 +28,8 @@ class MaskRCNNFPNFeatureExtractor(nn.Module):
         """
         super(MaskRCNNFPNFeatureExtractor, self).__init__()
 
-        resolution = cfg.MODEL.ROI_MASK_HEAD.POOLER_RESOLUTION
-        scales = cfg.MODEL.ROI_MASK_HEAD.POOLER_SCALES
-        sampling_ratio = cfg.MODEL.ROI_MASK_HEAD.POOLER_SAMPLING_RATIO
-        pooler = Pooler(
-            output_size=(resolution, resolution),
-            scales=scales,
-            sampling_ratio=sampling_ratio,
-        )
+        pooler = Pooler(cfg.MODEL.ROI_MASK_HEAD)
+
         input_size = in_channels
         self.pooler = pooler
 

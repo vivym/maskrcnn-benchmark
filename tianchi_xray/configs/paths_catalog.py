@@ -17,24 +17,26 @@ class DatasetCatalog(object):
         },
         "round2_train": {
             "img_dir": "round2/restricted",
-            "ann_file": "round2/annotations/instances_train2017.json"
+            "ann_file": "round2/train.json"
+        },
+        "round2_eval": {
+            "img_dir": "round2/restricted",
+            "ann_file": "round2/eval.json"
         },
     }
 
     @staticmethod
     def get(name):
-        if "coco" in name:
-            data_dir = DatasetCatalog.DATA_DIR
-            attrs = DatasetCatalog.DATASETS[name]
-            args = dict(
-                root=os.path.join(data_dir, attrs["img_dir"]),
-                ann_file=os.path.join(data_dir, attrs["ann_file"]),
-            )
-            return dict(
-                factory="COCODataset",
-                args=args,
-            )
-        raise RuntimeError("Dataset not available: {}".format(name))
+        data_dir = DatasetCatalog.DATA_DIR
+        attrs = DatasetCatalog.DATASETS[name]
+        args = dict(
+            root=os.path.join(data_dir, attrs["img_dir"]),
+            ann_file=os.path.join(data_dir, attrs["ann_file"]),
+        )
+        return dict(
+            factory="COCODataset",
+            args=args,
+        )
 
 
 class ModelCatalog(object):
