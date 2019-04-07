@@ -17,7 +17,6 @@ from maskrcnn_benchmark.utils.env import setup_environment  # noqa F401 isort:sk
 
 
 import torch
-import torch.backends.cudnn as cudnn
 from maskrcnn_benchmark.config import cfg
 from maskrcnn_benchmark.data import make_data_loader
 from maskrcnn_benchmark.solver import make_lr_scheduler
@@ -53,10 +52,10 @@ def train(cfg, local_rank, distributed, use_tensorboard):
         model = torch.nn.parallel.DistributedDataParallel(
             model, device_ids=[local_rank], output_device=local_rank,
             # this should be removed if we update BatchNorm stats
-            broadcast_buffers=True,
+            broadcast_buffers=False,
         )
         """
-        # model = DistributedDataParallel(model)
+        model = DistributedDataParallel(model, delay_allreduce=True)
 
     arguments = {}
     arguments["iteration"] = 0
@@ -89,6 +88,8 @@ def train(cfg, local_rank, distributed, use_tensorboard):
         )
     else:
         meters = MetricLogger(delimiter="  ")
+
+    synchronize()
 
     do_train(
         model,
@@ -139,7 +140,6 @@ def run_test(cfg, model, distributed):
 
 
 def main():
-    cudnn.benchmark = True
     parser = argparse.ArgumentParser(description="PyTorch Object Detection Training")
     parser.add_argument(
         "--config-file",

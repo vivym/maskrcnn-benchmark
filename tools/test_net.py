@@ -66,7 +66,7 @@ def main():
     logger.info("Collecting env info (might take some time)")
     logger.info("\n" + collect_env_info())
 
-    seed = cfg.MODEL.SEED
+    seed = cfg.SEED
     if seed >= 0:
         if distributed:
             seed += args.local_rank

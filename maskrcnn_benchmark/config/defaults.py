@@ -240,10 +240,12 @@ _C.MODEL.ROI_BOX_HEAD.DILATION = 1
 _C.MODEL.ROI_BOX_HEAD.CONV_HEAD_DIM = 256
 _C.MODEL.ROI_BOX_HEAD.NUM_STACKED_CONVS = 4
 
-_C.MODEL.ROI_BOX_HEAD.LOSS_FUNC = "cross_entropy" # or softmax_focal_loss
-_C.MODEL.ROI_BOX_HEAD.LOSS_ALPHA = [] # for softmax_focal_loss
-_C.MODEL.ROI_BOX_HEAD.LOSS_GAMMA = 2.
-_C.MODEL.ROI_BOX_HEAD.LOSS_SMOOTH = 0.05
+_C.MODEL.ROI_BOX_HEAD.CLASS_LOSS_FUNC = "CrossEntropyLoss" # or SoftmaxFocalLoss
+_C.MODEL.ROI_BOX_HEAD.CLASS_LOSS_SMOOTH_EPS = 0.
+_C.MODEL.ROI_BOX_HEAD.CLASS_LOSS_SMOOTH_DIST = []
+_C.MODEL.ROI_BOX_HEAD.CLASS_LOSS_ALPHA = []     # for SoftmaxFocalLoss
+_C.MODEL.ROI_BOX_HEAD.CLASS_LOSS_GAMMA = 2.     # for SoftmaxFocalLoss
+_C.MODEL.ROI_BOX_HEAD.CLASS_LOSS_SMOOTH = 0.05  # for SoftmaxFocalLoss
 
 
 _C.MODEL.ROI_MASK_HEAD = CN()
@@ -434,6 +436,8 @@ _C.SOLVER.CHECKPOINT_PERIOD = 2500
 # This is global, so if we have 8 GPUs and IMS_PER_BATCH = 16, each GPU will
 # see 2 images per batch
 _C.SOLVER.IMS_PER_BATCH = 16
+
+_C.SOLVER.LR_SCHEDULER = "WarmupMultiStepLR" # WarmupCosineAnnealingLR
 
 # ---------------------------------------------------------------------------- #
 # Specific test options

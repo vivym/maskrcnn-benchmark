@@ -43,6 +43,9 @@ class RPNPostProcessor(torch.nn.Module):
         self.post_nms_top_n = post_nms_top_n
         self.nms_thresh = nms_thresh
         self.min_size = min_size
+        self.nms_method = nms_method
+        self.nms_sigma = nms_sigma
+        self.nms_min_score = nms_min_score
 
         if box_coder is None:
             box_coder = BoxCoder(weights=(1.0, 1.0, 1.0, 1.0))
@@ -118,7 +121,9 @@ class RPNPostProcessor(torch.nn.Module):
             boxlist = boxlist_nms(
                 boxlist,
                 self.nms_thresh,
-                method='vanilla',
+                method=self.nms_method,
+                sigma=self.nms_sigma,
+                min_score=self.nms_min_score,
                 max_proposals=self.post_nms_top_n,
                 score_field="objectness",
             )

@@ -4,6 +4,7 @@ from torch.nn import functional as F
 
 from maskrcnn_benchmark.layers import smooth_l1_loss
 from maskrcnn_benchmark.layers import SoftmaxFocalLoss
+from maskrcnn_benchmark.layers import CrossEntropyLoss
 from maskrcnn_benchmark.modeling.box_coder import BoxCoder
 from maskrcnn_benchmark.modeling.matcher import Matcher
 from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
@@ -25,8 +26,8 @@ class FastRCNNLossComputation(object):
         fg_bg_sampler, 
         box_coder, 
         cls_agnostic_bbox_reg=False,
-        loss_func='cross_entropy',
-        loss_extra_argv=None,
+        class_loss_func='cross_entropy',
+        class_loss_extra_argv=None,
     ):
         """
         Arguments:
@@ -38,14 +39,16 @@ class FastRCNNLossComputation(object):
         self.fg_bg_sampler = fg_bg_sampler
         self.box_coder = box_coder
         self.cls_agnostic_bbox_reg = cls_agnostic_bbox_reg
-        self.loss_func = loss_func
-        if loss_func == "softmax_focal_loss":
-            self.softmax_focal_loss = SoftmaxFocalLoss(
-                loss_extra_argv["num_classes"],
-                gamma=loss_extra_argv["gamma"],
-                # alpha=[16, 16, 1, 4, 4, 4, 16, 16, 16, 16, 16],
-                alpha=loss_extra_argv["alpha"],
-                smooth=loss_extra_argv["smooth"],
+        if class_loss_func == "CrossEntropyLoss":
+            self.classification_loss_func = CrossEntropyLoss(
+                smooth_eps=class_loss_extra_argv["smooth_eps"]
+            )
+        elif class_loss_func == "SoftmaxFocalLoss":
+            self.classification_loss_func = SoftmaxFocalLoss(
+                class_loss_extra_argv["num_classes"],
+                gamma=class_loss_extra_argv["gamma"],
+                alpha=class_loss_extra_argv["alpha"],
+                smooth=class_loss_extra_argv["smooth"],
             )
 
     def match_targets_to_proposals(self, proposal, target):
@@ -176,12 +179,7 @@ class FastRCNNLossComputation(object):
         )
         box_loss = box_loss / labels.numel()
 
-        if self.loss_func == "cross_entropy":
-            classification_loss = F.cross_entropy(class_logits, labels)
-        elif self.loss_func == "softmax_focal_loss":
-            classification_loss = self.softmax_focal_loss(class_logits, labels)
-        else:
-            assert 0
+        classification_loss = self.classification_loss_func(class_logits, labels)
 
         return classification_loss, box_loss
 
@@ -202,21 +200,23 @@ def make_roi_box_loss_evaluator(cfg):
 
     cls_agnostic_bbox_reg = cfg.MODEL.CLS_AGNOSTIC_BBOX_REG
 
-    loss_func = cfg.MODEL.ROI_BOX_HEAD.LOSS_FUNC
-    loss_extra_argv = {}
-    if loss_func == "softmax_focal_loss":
-        loss_extra_argv["alpha"] = cfg.MODEL.ROI_BOX_HEAD.LOSS_ALPHA
-        loss_extra_argv["gamma"] = cfg.MODEL.ROI_BOX_HEAD.LOSS_GAMMA
-        loss_extra_argv["smooth"] = cfg.MODEL.ROI_BOX_HEAD.LOSS_SMOOTH
-        loss_extra_argv["num_classes"] = cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES
+    class_loss_func = cfg.MODEL.ROI_BOX_HEAD.CLASS_LOSS_FUNC
+    class_loss_extra_argv = {}
+    if class_loss_func == "CrossEntropyLoss":
+        class_loss_extra_argv["smooth_eps"] = cfg.MODEL.ROI_BOX_HEAD.CLASS_LOSS_SMOOTH_EPS
+    if class_loss_func == "SoftmaxFocalLoss":
+        class_loss_extra_argv["alpha"] = cfg.MODEL.ROI_BOX_HEAD.CLASS_LOSS_ALPHA
+        class_loss_extra_argv["gamma"] = cfg.MODEL.ROI_BOX_HEAD.CLASS_LOSS_GAMMA
+        class_loss_extra_argv["smooth"] = cfg.MODEL.ROI_BOX_HEAD.CLASS_LOSS_SMOOTH
+        class_loss_extra_argv["num_classes"] = cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES
 
     loss_evaluator = FastRCNNLossComputation(
         matcher, 
         fg_bg_sampler, 
         box_coder, 
         cls_agnostic_bbox_reg,
-        loss_func=loss_func,
-        loss_extra_argv=loss_extra_argv,
+        class_loss_func=class_loss_func,
+        class_loss_extra_argv=class_loss_extra_argv,
     )
 
     return loss_evaluator

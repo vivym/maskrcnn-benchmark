@@ -72,7 +72,7 @@ ResNet101StagesTo4 = tuple(
 # ResNet-50-FPN (including all stages)
 ResNet50FPNStagesTo5 = tuple(
     StageSpec(index=i, block_count=c, return_features=r, deform=d)
-    for (i, c, r, d) in ((1, 3, True, False), (2, 4, True, True), (3, 6, True, True), (4, 3, True, True))
+    for (i, c, r, d) in ((1, 3, True, False), (2, 4, True, False), (3, 6, True, True), (4, 3, True, True))
 )
 # ResNet-101-FPN (including all stages)
 ResNet101FPNStagesTo5 = tuple(

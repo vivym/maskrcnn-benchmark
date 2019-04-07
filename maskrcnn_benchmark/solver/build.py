@@ -2,6 +2,7 @@
 import torch
 
 from .lr_scheduler import WarmupMultiStepLR
+from .lr_scheduler import WarmupCosineAnnealingLR
 
 
 def make_optimizer(cfg, model):
@@ -21,11 +22,25 @@ def make_optimizer(cfg, model):
 
 
 def make_lr_scheduler(cfg, optimizer):
-    return WarmupMultiStepLR(
-        optimizer,
-        cfg.SOLVER.STEPS,
-        cfg.SOLVER.GAMMA,
-        warmup_factor=cfg.SOLVER.WARMUP_FACTOR,
-        warmup_iters=cfg.SOLVER.WARMUP_ITERS,
-        warmup_method=cfg.SOLVER.WARMUP_METHOD,
-    )
+    scheduler = cfg.SOLVER.LR_SCHEDULER
+    if scheduler == "WarmupMultiStepLR":
+        return WarmupMultiStepLR(
+            optimizer,
+            # cfg.SOLVER.STEPS,
+            cfg.SOLVER.GAMMA,
+            warmup_factor=cfg.SOLVER.WARMUP_FACTOR,
+            warmup_iters=cfg.SOLVER.WARMUP_ITERS,
+            warmup_method=cfg.SOLVER.WARMUP_METHOD,
+        )
+    elif scheduler == 'WarmupCosineAnnealingLR':
+        return WarmupCosineAnnealingLR(
+            optimizer,
+            cfg.SOLVER.MAX_ITER,
+            eta_min=0,
+            warmup_factor=cfg.SOLVER.WARMUP_FACTOR,
+            warmup_iters=cfg.SOLVER.WARMUP_ITERS,
+            warmup_method=cfg.SOLVER.WARMUP_METHOD,
+        )
+    else:
+        # TODO:
+        assert 0
